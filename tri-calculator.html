@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tri Time Calculator</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      fontFamily: { mono: ['Courier New', 'Courier', 'monospace'] }
+    }
+  }
+}
+</script>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-mono min-h-screen flex flex-col transition-colors">
+
+  <!-- Header -->
+  <header class="bg-white dark:bg-gray-800 shadow-sm">
+    <div class="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-bold">Tri Time Calculator</h1>
+
+      </div>
+      <button id="theme-toggle" class="p-2 rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-sm">
+        <span id="theme-icon">🌙</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
+
+    <!-- Race Type -->
+    <div class="mb-6">
+      <label class="block text-sm font-bold mb-2">Race Type</label>
+      <select id="race-type" class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm">
+        <option value="sprint">Sprint — 750m / 20km / 5km</option>
+        <option value="olympic">Olympic — 1.5km / 40km / 10km</option>
+        <option value="half">Half Ironman — 1.9km / 90km / 21.1km</option>
+        <option value="full">Full Ironman — 3.8km / 180km / 42.2km</option>
+      </select>
+    </div>
+
+    <!-- Inputs -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+      <div>
+        <label class="block text-sm font-bold mb-1">Swim Pace <span class="font-normal text-gray-500">(mm:ss / 100m)</span></label>
+        <input id="swim-pace" type="text" value="2:00" class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm" placeholder="2:00">
+      </div>
+      <div>
+        <label class="block text-sm font-bold mb-1">Bike Speed <span class="font-normal text-gray-500">(km/h)</span></label>
+        <input id="bike-speed" type="text" value="30" class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm" placeholder="30">
+      </div>
+      <div>
+        <label class="block text-sm font-bold mb-1">Run Pace <span class="font-normal text-gray-500">(mm:ss / km)</span></label>
+        <input id="run-pace" type="text" value="5:30" class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm" placeholder="5:30">
+      </div>
+      <div>
+        <label class="block text-sm font-bold mb-1">T1 <span class="font-normal text-gray-500">(mm:ss)</span></label>
+        <input id="t1-time" type="text" value="3:00" class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm" placeholder="3:00">
+      </div>
+      <div>
+        <label class="block text-sm font-bold mb-1">T2 <span class="font-normal text-gray-500">(mm:ss)</span></label>
+        <input id="t2-time" type="text" value="2:00" class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm" placeholder="2:00">
+      </div>
+    </div>
+
+    <!-- Calculate Button -->
+    <button id="calc-btn" class="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors mb-8">
+      Calculate
+    </button>
+
+    <!-- Error -->
+    <div id="error-msg" class="hidden mb-6 p-3 rounded-lg bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-sm"></div>
+
+    <!-- Results -->
+    <div id="results" class="hidden">
+      <!-- Total -->
+      <div class="mb-6 p-6 rounded-lg bg-blue-600 text-white text-center">
+        <p class="text-sm uppercase tracking-wide mb-1">Total Time</p>
+        <p id="total-time" class="text-4xl font-bold"></p>
+      </div>
+
+      <!-- Leg Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div class="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm text-center">
+          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Swim</p>
+          <p id="swim-time" class="text-xl font-bold"></p>
+          <p id="swim-dist" class="text-xs text-gray-500 dark:text-gray-400"></p>
+        </div>
+        <div class="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm text-center">
+          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Bike</p>
+          <p id="bike-time" class="text-xl font-bold"></p>
+          <p id="bike-dist" class="text-xs text-gray-500 dark:text-gray-400"></p>
+        </div>
+        <div class="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm text-center">
+          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">Run</p>
+          <p id="run-time" class="text-xl font-bold"></p>
+          <p id="run-dist" class="text-xs text-gray-500 dark:text-gray-400"></p>
+        </div>
+      </div>
+
+      <!-- Transitions -->
+      <div class="grid grid-cols-2 gap-4">
+        <div class="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm text-center">
+          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">T1</p>
+          <p id="t1-result" class="text-lg font-bold"></p>
+        </div>
+        <div class="p-4 rounded-lg bg-white dark:bg-gray-800 shadow-sm text-center">
+          <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1">T2</p>
+          <p id="t2-result" class="text-lg font-bold"></p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-center py-4 text-xs text-gray-500 dark:text-gray-400">
+    <a href="https://github.com/justinpetsche" class="hover:underline">@justinpetsche</a>
+    · <a href="index.html" class="hover:underline">back</a>
+  </footer>
+
+<script>
+// Race distances: [swim meters, bike km, run km]
+const RACES = {
+  sprint:  [750,  20,  5],
+  olympic: [1500, 40,  10],
+  half:    [1900, 90,  21.1],
+  full:    [3800, 180, 42.2]
+};
+
+// Parse mm:ss to total seconds
+function parseTime(str) {
+  const parts = str.trim().split(':');
+  if (parts.length !== 2) return null;
+  const m = parseInt(parts[0], 10);
+  const s = parseInt(parts[1], 10);
+  if (isNaN(m) || isNaN(s) || m < 0 || s < 0 || s >= 60) return null;
+  return m * 60 + s;
+}
+
+// Seconds to hh:mm:ss
+function formatTime(sec) {
+  sec = Math.round(sec);
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if (h > 0) {
+    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  document.getElementById('results').classList.add('hidden');
+}
+
+function clearError() {
+  document.getElementById('error-msg').classList.add('hidden');
+}
+
+function calculate() {
+  clearError();
+
+  const raceType = document.getElementById('race-type').value;
+  const [swimDist, bikeDist, runDist] = RACES[raceType];
+
+  // Parse inputs
+  const swimPaceSec = parseTime(document.getElementById('swim-pace').value);
+  if (swimPaceSec === null || swimPaceSec <= 0) return showError('Invalid swim pace. Use mm:ss format (e.g. 2:00).');
+
+  const bikeSpeed = parseFloat(document.getElementById('bike-speed').value);
+  if (isNaN(bikeSpeed) || bikeSpeed <= 0) return showError('Invalid bike speed. Enter a positive number in km/h.');
+
+  const runPaceSec = parseTime(document.getElementById('run-pace').value);
+  if (runPaceSec === null || runPaceSec <= 0) return showError('Invalid run pace. Use mm:ss format (e.g. 5:30).');
+
+  const t1Sec = parseTime(document.getElementById('t1-time').value);
+  if (t1Sec === null) return showError('Invalid T1 time. Use mm:ss format (e.g. 3:00).');
+
+  const t2Sec = parseTime(document.getElementById('t2-time').value);
+  if (t2Sec === null) return showError('Invalid T2 time. Use mm:ss format (e.g. 2:00).');
+
+  // Calculate leg times in seconds
+  const swimSec = swimPaceSec * (swimDist / 100);
+  const bikeSec = (bikeDist / bikeSpeed) * 3600;
+  const runSec = runPaceSec * runDist;
+  const totalSec = swimSec + t1Sec + bikeSec + t2Sec + runSec;
+
+  // Display
+  document.getElementById('swim-time').textContent = formatTime(swimSec);
+  document.getElementById('swim-dist').textContent = swimDist >= 1000 ? `${(swimDist/1000).toFixed(1)}km` : `${swimDist}m`;
+  document.getElementById('bike-time').textContent = formatTime(bikeSec);
+  document.getElementById('bike-dist').textContent = `${bikeDist}km`;
+  document.getElementById('run-time').textContent = formatTime(runSec);
+  document.getElementById('run-dist').textContent = `${runDist}km`;
+  document.getElementById('t1-result').textContent = formatTime(t1Sec);
+  document.getElementById('t2-result').textContent = formatTime(t2Sec);
+  document.getElementById('total-time').textContent = formatTime(totalSec);
+  document.getElementById('results').classList.remove('hidden');
+}
+
+document.getElementById('calc-btn').addEventListener('click', calculate);
+
+// Dark mode toggle
+const toggle = document.getElementById('theme-toggle');
+const icon = document.getElementById('theme-icon');
+
+if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  document.documentElement.classList.add('dark');
+  icon.textContent = '☀️';
+}
+
+toggle.addEventListener('click', () => {
+  document.documentElement.classList.toggle('dark');
+  icon.textContent = document.documentElement.classList.contains('dark') ? '☀️' : '🌙';
+});
+</script>
+
+</body>
+</html>

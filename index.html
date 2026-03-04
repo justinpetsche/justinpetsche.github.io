@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>justin petsche</title>
+
+<!-- Open Graph -->
+<meta property="og:title" content="Justin Petsche — Builder, Seller, Tinkerer">
+<meta property="og:description" content="Build what I love with people I vibe with. Companies, projects, and a career told in code.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://justinpetsche.github.io">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Justin Petsche — Builder, Seller, Tinkerer">
+<meta name="twitter:description" content="Build what I love with people I vibe with. Companies, projects, and a career told in code.">
+
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #ffffff;
+    color: #383a42;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  #editor {
+    display: flex;
+    padding: 24px 0;
+    max-width: 860px;
+  }
+
+  #gutter {
+    text-align: right;
+    padding: 0 12px 0 16px;
+    color: #c0c1c4;
+    user-select: none;
+    border-right: 1px solid #e8e8e8;
+    min-width: 48px;
+    flex-shrink: 0;
+  }
+
+  #gutter span {
+    display: block;
+  }
+
+  #code {
+    flex: 1;
+    padding: 0 16px 0 16px;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  #code .line {
+    display: block;
+    min-height: 1.6em;
+  }
+
+  .comment { color: #333544; }
+  .keyword { color: #8b1fa0; }
+  .string { color: #3a8a3a; }
+  .type { color: #2860d0; }
+  .punct { color: #1a1c2a; }
+  .prop { color: #c93030; }
+  .num { color: #7a5500; }
+  .fn { color: #2860d0; }
+  .git-hash { color: #7a5500; }
+  .git-date { color: #8b1fa0; }
+  .git-msg { color: #333544; }
+  a { color: #50a14f; text-decoration: none; }
+  a:hover { color: #3d8b3d; text-decoration: underline; }
+
+  /* Blinking cursor */
+  #cursor {
+    display: inline-block;
+    width: 8px;
+    height: 1.1em;
+    background: #383a42;
+    vertical-align: text-bottom;
+    animation: blink 1s step-end infinite;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* Command palette */
+  #palette-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.3);
+    z-index: 100;
+    justify-content: center;
+    padding-top: 20vh;
+  }
+  #palette-overlay.open { display: flex; }
+
+  #palette {
+    background: #fff;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 480px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    overflow: hidden;
+    height: fit-content;
+  }
+
+  #palette input {
+    width: 100%;
+    padding: 14px 16px;
+    border: none;
+    border-bottom: 1px solid #e8e8e8;
+    font-family: inherit;
+    font-size: 15px;
+    outline: none;
+    background: #fafafa;
+  }
+
+  #palette-results {
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  .palette-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .palette-item:hover, .palette-item.active {
+    background: #f0f0f0;
+  }
+  .palette-item .label { color: #383a42; }
+  .palette-item .hint { color: #a0a1a7; font-size: 13px; }
+
+  /* Headshot */
+  #headshot {
+    padding: 24px 0 0 16px;
+  }
+  #headshot img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e8e8e8;
+  }
+
+  /* Typing animation */
+  #code .line {
+    opacity: 0;
+    transform: translateY(2px);
+  }
+
+  #code .line.visible {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.08s ease, transform 0.08s ease;
+  }
+
+  /* Skip animation if user prefers reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    #code .line { opacity: 1; transform: none; }
+    #cursor { animation: none; opacity: 1; }
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    body { font-size: 13px; }
+    #gutter { padding: 0 8px 0 8px; min-width: 36px; }
+    #code { padding: 0 10px; }
+    #editor { padding: 16px 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="headshot">
+  <img src="headshot.jpeg" alt="Justin Petsche">
+</div>
+<div id="editor">
+  <div id="gutter"></div>
+  <div id="code"></div>
+</div>
+
+<!-- Command Palette -->
+<div id="palette-overlay">
+  <div id="palette">
+    <input id="palette-input" type="text" placeholder="Type a command..." autocomplete="off">
+    <div id="palette-results"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// justin_petsche.js — this page renders itself from the data below
+// ============================================================
+
+const bio = {
+  name: "Justin Petsche",
+  tagline: "founder / sales leader / tinkerer",
+  about: [
+    "Yo, I'm Justin.",
+    "15+ years building and selling things.",
+    "Build what I love with people I vibe with.",
+    "Sold one, broke a few, still going.",
+    "Dubbed world's best generalist by some (I'll take it).",
+    "Low BS, high output.",
+  ]
+};
+
+const companies = [
+  { name: "Lucenia",               url: "https://lucenia.io",   desc: "Driving growth at a search company." },
+  { name: "Torre.ai",              url: "https://torre.ai",     desc: "Co-founder, VP Sales. Raised $30M, built teams in 20+ countries." },
+  { name: "JournalSqrd",           url: null, status: "exited", desc: "Built and sold a bootstrapped trading journal." },
+  { name: "SharkFin Technologies", url: null, status: "failed", desc: "Tech sales consulting. Learned more from this than anything." },
+];
+
+const projects = [
+  { name: "Opacore", url: "https://github.com/opacore/opacore", desc: "Open source bitcoin tracker with free tax reporting." },
+  { name: "GTM Playbook", url: "https://wind-skirt-c6c.notion.site/Sales-Team-Home-f0755dcbc54949bb84b67efceda3a121?pvs=143", desc: "Open source playbook for GTM." },
+];
+
+const highlights = [
+  "talked investors out of $30M+",
+  "took 4 business lines from zero to $1M ARR in under 6 months",
+  "built teams of 100+ across 20+ countries",
+  "trained 50+ salespeople, a bunch are directors now",
+  "done it all: playbooks, hiring, comp plans, CRM, P&L",
+];
+
+const skills = [
+  "B2B GTM", "founder-led sales", "technical product positioning",
+  "sales playbook design", "CRM implementation", "team building",
+  "VC fundraising", "open source", "AI/HRTech/FinTech/SaaS",
+];
+
+const personal = [
+  "bilingual (spanish)", "private pilot", "PADI diver",
+  "twin dad", "MBA", "lived in 3 countries (US/Indo/Mex)",
+  "visited 54", "Ironman",
+];
+
+const gitLog = [
+  { hash: "a1b2c3d", date: "2024-present", msg: "feat(lucenia): driving growth at search company" },
+  { hash: "e4f5g6h", date: "2019-2025",    msg: "feat(torre): co-founded AI recruiting platform, scaled global sales org" },
+  { hash: "i7j8k9l", date: "2014-2019",    msg: "exit(journalsqrd): bootstrapped fintech, built it, sold it" },
+  { hash: "m0n1o2p", date: "2007-2014",    msg: "fail(sharkfin): tech sales consulting — learned the hard way" },
+  { hash: "q3r4s5t", date: "2007-present", msg: "init: started building things and never stopped" },
+];
+
+const socials = {
+  github:    "https://github.com/justinpetsche",
+  linkedin:  "https://www.linkedin.com/in/justinpetsche/",
+  email:     "mailto:justinpetsche@gmail.com",
+  workWithMe: "https://wind-skirt-c6c.notion.site/My-Expectations-As-Your-Colleague-5a45d757824d420cb3ab38074ea9f316",
+};
+
+// ============================================================
+// Renderer — turns the data above into syntax-highlighted lines
+// ============================================================
+
+function span(cls, text) { return `<span class="${cls}">${text}</span>`; }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function link(url, text) { return `<a href="${esc(url)}">${esc(text)}</a>`; }
+
+function renderLines() {
+  const L = [];
+  const s = (cls, t) => span(cls, t);
+  const p = t => s('punct', t);
+  const k = t => s('keyword', t);
+  const str = t => s('string', `"${esc(t)}"`);
+  const pr = t => s('prop', t);
+  const cm = t => s('comment', t);
+
+  // Header
+  L.push(cm(`// ${esc(bio.name.toLowerCase())}`));
+  L.push(cm(`// ${esc(bio.tagline.toLowerCase())}`));
+  L.push('');
+
+  // Bio block
+  L.push(cm('/**'));
+  bio.about.forEach(line => L.push(cm(` * ${esc(line)}`)));
+  L.push(cm(` * `));
+  L.push(`${cm(' * want to work together?')} ${cm('→')} ${s('string','"')}${link(socials.workWithMe, 'read this first')}${s('string','"')}`);
+  L.push(cm(' */'));
+  L.push('');
+
+  // Companies
+  L.push(`${k('const')} ${s('type','companies')} ${p('= [')} `);
+  companies.forEach(c => {
+    L.push(`  ${p('{')} `);
+    L.push(`    ${pr('name')}${p(':')} ${str(c.name)}${p(',')}`);
+    if (c.url) {
+      L.push(`    ${pr('url')}${p(':')}  ${s('string','"')}${link(c.url, c.url)}${s('string','"')}${p(',')}`);
+    } else {
+      L.push(`    ${pr('url')}${p(':')}  ${str(c.status)}${p(',')}`);
+    }
+    L.push(`    ${pr('desc')}${p(':')} ${str(c.desc)}`);
+    L.push(`  ${p('},')} `);
+  });
+  L.push(`${p('];')}`);
+  L.push('');
+
+  // Projects
+  L.push(`${k('const')} ${s('type','projects')} ${p('= [')} `);
+  projects.forEach(proj => {
+    L.push(`  ${p('{')} `);
+    L.push(`    ${pr('name')}${p(':')} ${str(proj.name)}${p(',')}`);
+    L.push(`    ${pr('url')}${p(':')}  ${s('string','"')}${link(proj.url, proj.url)}${s('string','"')}${p(',')}`);
+    L.push(`    ${pr('desc')}${p(':')} ${str(proj.desc)}`);
+    L.push(`  ${p('},')} `);
+  });
+  L.push(`${p('];')}`);
+  L.push('');
+
+  // Highlights
+  L.push(`${k('const')} ${s('type','highlights')} ${p('= [')} `);
+  highlights.forEach(h => {
+    L.push(`  ${str(h)}${p(',')}`);
+  });
+  L.push(`${p('];')}`);
+  L.push('');
+
+  // Skills
+  L.push(`${k('const')} ${s('type','skills')} ${p('= [')} `);
+  skills.forEach(sk => {
+    L.push(`  ${str(sk)}${p(',')}`);
+  });
+  L.push(`${p('];')}`);
+  L.push('');
+
+  // Personal
+  L.push(`${k('const')} ${s('type','personal')} ${p('= [')} `);
+  personal.forEach(item => {
+    L.push(`  ${str(item)}${p(',')}`);
+  });
+  L.push(`${p('];')}`);
+  L.push('');
+
+  // Git log
+  L.push(cm('// git log --oneline'));
+  gitLog.forEach(entry => {
+    L.push(`${s('git-hash', esc(entry.hash))} ${s('git-date','('+esc(entry.date)+')')} ${s('git-msg', esc(entry.msg))}`);
+  });
+  L.push('');
+
+  // Socials
+  L.push(`${k('const')} ${s('type','socials')} ${p('= {')} `);
+  L.push(`  ${pr('github')}${p(':')}      ${s('string','"')}${link(socials.github, socials.github)}${s('string','"')}${p(',')}`);
+  L.push(`  ${pr('linkedin')}${p(':')}    ${s('string','"')}${link(socials.linkedin, socials.linkedin)}${s('string','"')}${p(',')}`);
+  L.push(`  ${pr('email')}${p(':')}       ${s('string','"')}${link(socials.email, socials.email.replace('mailto:',''))}${s('string','"')}`);
+  L.push(`${p('};')}`);
+
+  return L;
+}
+
+// ============================================================
+// DOM rendering
+// ============================================================
+
+const lines = renderLines();
+const gutter = document.getElementById('gutter');
+const code = document.getElementById('code');
+
+lines.forEach((content, i) => {
+  // Line number
+  const num = document.createElement('span');
+  num.textContent = i + 1;
+  gutter.appendChild(num);
+
+  // Code line
+  const line = document.createElement('span');
+  line.className = 'line';
+  line.innerHTML = content || '\u200b'; // zero-width space for empty lines
+  code.appendChild(line);
+});
+
+// Append cursor to last line
+const cursor = document.createElement('span');
+cursor.id = 'cursor';
+code.lastElementChild.appendChild(cursor);
+
+// ============================================================
+// Typing animation — reveal lines sequentially
+// ============================================================
+
+const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const allLines = code.querySelectorAll('.line');
+
+if (prefersReduced) {
+  allLines.forEach(l => l.classList.add('visible'));
+} else {
+  let delay = 0;
+  allLines.forEach((l, i) => {
+    setTimeout(() => l.classList.add('visible'), delay);
+    delay += 30;
+  });
+}
+
+// ============================================================
+// Command palette (Cmd+K or /)
+// ============================================================
+
+const paletteCommands = [
+  { label: "GitHub",           hint: "Open GitHub profile",          action: () => window.open(socials.github, '_blank') },
+  { label: "LinkedIn",         hint: "Open LinkedIn profile",        action: () => window.open(socials.linkedin, '_blank') },
+  { label: "Email",            hint: "Send an email",                action: () => window.location.href = socials.email },
+  { label: "Work With Me",     hint: "My expectations as a colleague", action: () => window.open(socials.workWithMe, '_blank') },
+  { label: "GTM Playbook",     hint: "Open source sales playbook",   action: () => window.open('https://wind-skirt-c6c.notion.site/Sales-Team-Home-f0755dcbc54949bb84b67efceda3a121?pvs=143', '_blank') },
+  { label: "Tri Calculator",   hint: "Triathlon race time calculator", action: () => window.location.href = 'tri-calculator.html' },
+  { label: "Lucenia",          hint: "Visit lucenia.io",             action: () => window.open('https://lucenia.io', '_blank') },
+  { label: "Torre.ai",         hint: "Visit torre.ai",               action: () => window.open('https://torre.ai', '_blank') },
+  { label: "Opacore",          hint: "View on GitHub",               action: () => window.open('https://github.com/opacore/opacore', '_blank') },
+  { label: "Source code",      hint: "View page source",             action: () => window.open('view-source:' + window.location.href) },
+];
+
+const overlay = document.getElementById('palette-overlay');
+const input = document.getElementById('palette-input');
+const results = document.getElementById('palette-results');
+let activeIndex = 0;
+
+function openPalette() {
+  overlay.classList.add('open');
+  input.value = '';
+  input.focus();
+  filterPalette('');
+}
+
+function closePalette() {
+  overlay.classList.remove('open');
+}
+
+function filterPalette(query) {
+  const q = query.toLowerCase();
+  const filtered = paletteCommands.filter(c =>
+    c.label.toLowerCase().includes(q) || c.hint.toLowerCase().includes(q)
+  );
+  activeIndex = 0;
+  results.innerHTML = '';
+  filtered.forEach((cmd, i) => {
+    const div = document.createElement('div');
+    div.className = 'palette-item' + (i === 0 ? ' active' : '');
+    div.innerHTML = `<span class="label">${esc(cmd.label)}</span><span class="hint">${esc(cmd.hint)}</span>`;
+    div.addEventListener('click', () => { cmd.action(); closePalette(); });
+    div.addEventListener('mouseenter', () => {
+      results.querySelector('.active')?.classList.remove('active');
+      div.classList.add('active');
+      activeIndex = i;
+    });
+    results.appendChild(div);
+  });
+}
+
+input.addEventListener('input', () => filterPalette(input.value));
+
+input.addEventListener('keydown', (e) => {
+  const items = results.querySelectorAll('.palette-item');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    items[activeIndex]?.classList.remove('active');
+    activeIndex = (activeIndex + 1) % items.length;
+    items[activeIndex]?.classList.add('active');
+    items[activeIndex]?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    items[activeIndex]?.classList.remove('active');
+    activeIndex = (activeIndex - 1 + items.length) % items.length;
+    items[activeIndex]?.classList.add('active');
+    items[activeIndex]?.scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    items[activeIndex]?.click();
+  } else if (e.key === 'Escape') {
+    closePalette();
+  }
+});
+
+overlay.addEventListener('click', (e) => {
+  if (e.target === overlay) closePalette();
+});
+
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    overlay.classList.contains('open') ? closePalette() : openPalette();
+  }
+  if (e.key === '/' && !overlay.classList.contains('open') && document.activeElement === document.body) {
+    e.preventDefault();
+    openPalette();
+  }
+  if (e.key === 'Escape' && overlay.classList.contains('open')) {
+    closePalette();
+  }
+});
+</script>
+
+</body>
+</html>
